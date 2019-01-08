@@ -4,7 +4,9 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 
+import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -18,8 +20,8 @@ public class Servlet extends HttpServlet{
 	PreparedStatement pstmt2;
 	PreparedStatement pstmt3;
 	PreparedStatement pstmt4;
-	static String username;
-	String password;
+	static String username = "";
+	String password = "";
 	int mobilequantity;
 	int clothesquantity;
 	String clothes;
@@ -30,10 +32,11 @@ public class Servlet extends HttpServlet{
 	static int mobileValue;
 	int totalClothValue;
 	int totalMobileValue;
-	String sex;
-	String email;
+	String sex = "";
+	String email = "";
 	static int totalValue;
-	String contact;
+	String contact = "";
+	int result;
 	String registerqry = "insert into jejw16.account VALUES (?,?,?,?,?)";
 	String loginqry = "select * from jejw16.account where username=? and password=?";
 	String fetchqry = "select price from jejw16.stock where product=?";
@@ -54,7 +57,9 @@ public void doGet(HttpServletRequest req,HttpServletResponse resp) throws Servle
 		if(result.next()) {
 			resp.sendRedirect("./order.html");
 		}else {
-			out.println("login failed");
+			RequestDispatcher rd = req.getRequestDispatcher("login.html");
+			rd.include(req,resp);
+			out.println("Invalid Credentials");
 		}
 	}
 	if(hiddenValue.equalsIgnoreCase("register")) {
@@ -68,12 +73,25 @@ public void doGet(HttpServletRequest req,HttpServletResponse resp) throws Servle
 		pstmt2.setString(3, sex);
 		pstmt2.setString(4, email);
 		pstmt2.setString(5, contact);
-		int result = pstmt2.executeUpdate();
-		if(result >= 1) {
-			resp.sendRedirect("./login.html");
+		try {
+		result = pstmt2.executeUpdate();
+		}
+		catch(Exception e) {
+			RequestDispatcher rd = req.getRequestDispatcher("register.html");
+			rd.include(req,resp);
+			out.println("OOPS registration failed.");
+			out.println("<html><body></br></body></html>");
+			out.println("Possible reasons:");
+			out.println("<html><body></br></body></html>");
+			out.println("1) You left any field empty");
+			out.println("<html><body></br></body></html>");
+			out.println("2) Your username is already taken! Try another");
 			
-		}else {
-			out.println("registration failed");
+		}
+		if(result >= 1) {
+			RequestDispatcher rd = req.getRequestDispatcher("login.html");
+			rd.include(req,resp);
+			out.println("Registration successful");
 		}
 	}
 	if(hiddenValue.equalsIgnoreCase("order")) {
@@ -98,24 +116,15 @@ public void doGet(HttpServletRequest req,HttpServletResponse resp) throws Servle
 			mobileValue = mobileValueRS.getInt("price");
 		}
 		
+		req.setAttribute("username", username);
+		req.setAttribute("mobilevalue", mobileValue);
+		req.setAttribute("clothvalue", clothValue);
+		
 		totalClothValue = clothesquantity*clothValue;
 		totalMobileValue = mobilequantity*mobileValue;
 		totalValue = totalClothValue + totalMobileValue;
-		
-		out.println("<html>\r\n" + 
-				"<body>\r\n" + 
-				"<form action=\"myservlet\">\r\n" + 
-				"Please check the following details. If everything is fine then press next to continue with your order\r\n" + 
-				"<input type=\"submit\" name=\"submit\" value=\"next\">\r\n" + 
-				"<input type=\"text\" value=\"confirm\" name=\"hiddenValue\" hidden=\"true\">\r\n" + 
-				"</form>\r\n" + 
-				"</body>\r\n" + 
-				"</html>");
-		out.println("Hello "+ username);
-				out.println(".You have ordered "+mobilequantity+" "+mobile);
-				out.println(".You have ordered "+clothesquantity+" "+clothes+"(s)");
-				out.println(".Price of 1 "+mobile+" is "+mobileValue);
-				out.println(".Price of 1 "+clothes+" is "+clothValue);
+		RequestDispatcher rd = req.getRequestDispatcher("./price.jsp");
+		rd.include(req, resp);
 				
 	}
 	if(hiddenValue.equalsIgnoreCase("confirm")) {
@@ -131,7 +140,7 @@ public void doGet(HttpServletRequest req,HttpServletResponse resp) throws Servle
 	}
 	}
 	catch(Exception e) {
-		
+		System.out.println("Exception caught");
 	}
 }
 }
